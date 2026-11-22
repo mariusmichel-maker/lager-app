@@ -70,6 +70,22 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#fff;
 .ae summary{padding:10px 0;font-weight:700}
 .ae pre{white-space:pre-wrap;word-break:break-all;font-size:13px;background:#f4f4f4;padding:8px;margin:0}
 .ae .btn{width:100%;height:64px;line-height:64px;margin-top:10px;font-size:22px}
+.zeile{cursor:pointer}
+.ang{font-size:18px;font-weight:700;color:#0d47a1;word-wrap:break-word}
+.ang.ohne{font-weight:400;color:#1565c0;text-decoration:underline}
+.status small.sa{font-size:20px;font-weight:700;color:#0d47a1}
+.lbl{margin-top:18px;font-weight:700;font-size:20px}
+.wahl button{height:58px;padding:0 16px;margin:8px 8px 0 0;font-size:20px;font-weight:400;background:#eee;border:2px solid #bbb}
+.wahl button.an{background:#1565c0;color:#fff;border-color:#1565c0;font-weight:700}
+.wahl.kat button{width:23.5%;height:72px;margin:8px 2% 0 0;padding:0;font-size:19px}
+.wahl.kat button:last-child{margin-right:0}
+.ti{display:block;width:100%;height:60px;font-size:22px;padding:0 12px;margin-top:10px;border:3px solid #555;border-radius:10px;-webkit-appearance:none}
+.halb{width:49%!important;display:inline-block!important}
+.halb+.halb{margin-left:2%}
+.hinweis{background:#fff3cd;border:2px solid #e0a800;border-radius:10px;padding:10px 12px;font-weight:700}
+.gc{border-top:1px solid #ddd;padding:10px 0;overflow:hidden}
+.gc button{float:right;height:52px;padding:0 16px;margin-left:10px;font-size:18px}
+.gc .code{font-size:20px}
 </style>
 </head>
 <body class="m-E">
@@ -96,6 +112,7 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#fff;
 <div id="ovlSenden" class="ovl" hidden><div class="pnl">
   <h2 id="sTitel">Senden</h2>
   <p id="sText"></p>
+  <p id="sWarn" class="hinweis" hidden>Sehr lange Mail &ndash; lieber in zwei Sendungen teilen.</p>
   <a id="lnkMail" class="btn gross gruen" href="#">&#9993; Mail &ouml;ffnen</a>
   <button id="sAbbr" class="gross" type="button">Abbrechen</button>
 </div></div>
@@ -105,6 +122,16 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#fff;
   <p id="fText"></p>
   <button id="fJa" class="gross gruen" type="button">Ja, gesendet</button>
   <button id="fNein" class="gross rot" type="button">Nein &ndash; Liste behalten</button>
+</div></div>
+
+<div id="ovlAng" class="ovl" hidden><div class="pnl">
+  <h2>Angaben <span id="aCode" class="code"></span></h2>
+  <p class="info">Freiwillig. Gehen mit der n&auml;chsten Sendung an den Hub und f&uuml;llen sich beim n&auml;chsten Scan dieses Codes selbst aus.</p>
+  <div class="lbl">Kategorie</div>
+  <div id="aKat" class="wahl kat"></div>
+  <div id="aFelder"></div>
+  <button id="aSpeichern" class="gross gruen" type="button">Speichern</button>
+  <button id="aLeeren" class="gross halb" type="button">Leeren</button><button id="aAbbr" class="gross halb" type="button">Abbrechen</button>
 </div></div>
 
 <div id="ovlArchiv" class="ovl" hidden><div class="pnl">
@@ -122,6 +149,7 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#fff;
   <button id="eSpeichern" class="gross gruen" type="button">Speichern</button>
   <a id="lnkTest" class="btn gross" href="#">Testmail senden</a>
   <p class="info" id="eInfo"></p>
+  <details id="eCodes" class="ae"></details>
   <button id="eZu" class="gross" type="button">Schlie&szlig;en</button>
 </div></div>
 
@@ -218,17 +246,57 @@ function neueId() {
   return out;
 }
 
-/* Vertrag 3: m = {geraet, installation, nummer, sendung_id, fassung_zeit} */
-function baueMail(m, zeilen) {
+/* Vertrag 7.1: Feld einer A-Zeile -> druckbares ASCII ohne ';', getrimmt, gekappt */
+function asciiFeld(s, max) {
+  s = String(s === undefined || s === null ? '' : s).replace(/\s+/g, ' ');
+  if (s.normalize) { s = s.normalize('NFD'); }
+  s = s.replace(/([AOUaou])̈/g, '$1e').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue')
+    .replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ß/g, 'ss')
+    .replace(/[^ -~]/g, '').replace(/;/g, '').replace(/ {2,}/g, ' ').trim();
+  return s.substr(0, max).trim();
+}
+
+/* A-Zeile oder null (alle Felder leer); a = {kat F|H|P|V, material, hersteller, farbe, zusatz} */
+function aZeile(code, a) {
+  var k = String(a.kat || '');
+  var f = [asciiFeld(a.material, 24), asciiFeld(a.hersteller, 24), asciiFeld(a.farbe, 24), asciiFeld(a.zusatz, 32)];
+  if (!/^[FHPV]$/.test(k)) { k = ''; }
+  if (!k && !f[0] && !f[1] && !f[2] && !f[3]) { return null; }
+  return 'L;A;' + code + ';' + k + ';' + f.join(';');
+}
+
+/* Angaben fuer die Codes dieser Erfassung, die noch nicht bestaetigt uebertragen sind */
+function waehleAngaben(zeilen, db) {
+  var out = [], seen = {}, i, c, a;
+  for (i = 0; i < zeilen.length; i++) {
+    c = zeilen[i].code;
+    if (seen.hasOwnProperty(c)) { continue; }
+    seen[c] = 1;
+    a = (db && Object.prototype.hasOwnProperty.call(db, c)) ? db[c] : null;
+    if (a && typeof a === 'object' && !a.gesendet && aZeile(c, a)) {
+      out.push({ code: c, kat: a.kat, material: a.material, hersteller: a.hersteller, farbe: a.farbe, zusatz: a.zusatz, zeit: a.zeit });
+    }
+  }
+  return out;
+}
+
+/* Vertrag 3 + 7.1: m = {geraet, installation, nummer, sendung_id, fassung_zeit}; angaben optional */
+function baueMail(m, zeilen, angaben) {
   var L = ['PRINTOPS-LAGER 1', 'L;S;' + m.geraet + ';' + m.installation + ';' + m.nummer + ';' + m.sendung_id + ';' + m.fassung_zeit];
-  var summe = 0, i, z;
+  var summe = 0, i, z, a, seen = {}, mit = [];
   for (i = 0; i < zeilen.length; i++) {
     z = zeilen[i];
     L.push('L;' + z.zeit + ';' + z.modus + ';' + z.code + ';' + z.menge);
     summe += z.menge;
   }
+  for (i = 0; angaben && i < angaben.length; i++) {
+    a = angaben[i];
+    if (seen.hasOwnProperty(a.code)) { continue; }
+    z = aZeile(a.code, a);
+    if (z) { seen[a.code] = 1; L.push(z); mit.push({ code: a.code, zeit: a.zeit }); }
+  }
   L.push('L;ENDE;' + zeilen.length + ';' + summe);
-  return { betreff: '#lager ' + m.nummer, body: L.join('\r\n') + '\r\n', zeilen: zeilen.length, summe: summe };
+  return { betreff: '#lager ' + m.nummer, body: L.join('\r\n') + '\r\n', zeilen: zeilen.length, summe: summe, angaben: mit };
 }
 
 function mailtoHref(an, betreff, body) {
@@ -239,8 +307,27 @@ function mailtoHref(an, betreff, body) {
 
 (function () {
   'use strict';
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var NAMEN = { E: 'Entnahme', W: 'Wareneingang', Z: 'Zählung' };
+  var OVLS = ['ovlFrage', 'ovlSenden', 'ovlAng', 'ovlArchiv', 'ovlEinst'];
+  var MAX_CODES = 500, MAX_ZULETZT = 6, MAILTO_WARN = 15000;
+  var KATS = [['F', 'Filament'], ['H', 'Harz'], ['P', 'Pulver'], ['V', 'Verbrauch']];
+  var KATN = { F: 'Filament', H: 'Harz', P: 'Pulver', V: 'Verbrauch' };
+  var MATERIAL = {
+    F: ['PLA', 'PETG', 'ABS', 'ASA', 'TPU', 'PA', 'PC', 'PP', 'PVA'],
+    H: ['Standard', 'Tough', 'ABS-like', 'Flexibel', 'Hochtemp'],
+    P: ['PA12', 'PA11', 'TPU'],
+    V: []
+  };
+  var FELDER = [
+    { k: 'material', t: 'Material', max: 24, ph: 'anderes Material' },
+    { k: 'hersteller', t: 'Hersteller', max: 24, ph: 'anderer Hersteller',
+      v: ['Bambu Lab', 'Polymaker', 'Prusament', 'eSun', 'Sunlu', 'Fiberlogy', 'Extrudr', 'DasFilament', 'HeyGears'] },
+    { k: 'farbe', t: 'Farbe', max: 24, ph: 'andere Farbe',
+      v: ['Schwarz', 'Weiss', 'Grau', 'Silber', 'Rot', 'Blau', 'Gruen', 'Gelb', 'Orange', 'Natur', 'Transparent'] },
+    { k: 'zusatz', t: 'Zusatz', max: 32, ph: 'anderer Zusatz',
+      v: ['Matt', 'Glanz', 'Silk', 'HF', 'CF', 'GF', 'Basic', 'Translucent'] }
+  ];
   var MAIL_RE = /^[^\s@,;?&<>"']+@[^\s@,;?&<>"']+\.[^\s@,;?&<>"']+$/;
   var P = 'lager.v1.';
   var LS = null, speicherOk = false, mem = {};
@@ -299,6 +386,7 @@ function mailtoHref(an, betreff, body) {
     if (e && typeof e.sendung_id === 'string' && ID_RE.test(e.sendung_id) && e.zeilen && e.zeilen.length >= 0) {
       for (i = 0; i < e.zeilen.length; i++) { if (zeileOk(e.zeilen[i])) { z.push(e.zeilen[i]); } }
       st.erf = { sendung_id: e.sendung_id, zeilen: z };
+      if (typeof e.letzte_fassung_ms === 'number') { st.erf.letzte_fassung_ms = e.letzte_fassung_ms; }
     } else {
       st.erf = { sendung_id: neueId(), zeilen: [] };
     }
@@ -310,18 +398,61 @@ function mailtoHref(an, betreff, body) {
       empfaenger: typeof es.empfaenger === 'string' ? es.empfaenger : '',
       geraet: (typeof es.geraet === 'string' && GERAET_RE.test(es.geraet)) ? es.geraet : 'Lager-iPad'
     };
+    st.codes = {};
+    st.zuletzt = {};
+    try {
+      var c = lies('codes', {}), k, x, f;
+      if (c && typeof c === 'object' && !(c instanceof Array)) {
+        for (k in c) {
+          x = c[k];
+          if (!c.hasOwnProperty(k) || !x || typeof x !== 'object') { continue; }
+          st.codes[k] = { kat: /^[FHPV]$/.test(x.kat) ? x.kat : '', gesendet: x.gesendet === true,
+            zeit: typeof x.zeit === 'number' ? x.zeit : 0 };
+          for (f = 0; f < FELDER.length; f++) {
+            st.codes[k][FELDER[f].k] = typeof x[FELDER[f].k] === 'string' ? x[FELDER[f].k] : '';
+          }
+        }
+      }
+      var zl = lies('zuletzt', {});
+      if (zl && typeof zl === 'object' && !(zl instanceof Array)) {
+        for (k in zl) { if (zl.hasOwnProperty(k) && zl[k] instanceof Array) { st.zuletzt[k] = zl[k].slice(0, MAX_ZULETZT); } }
+      }
+    } catch (e3) { /* Angaben sind optional */ }
   }
   function speichereErf() { schreib('erfassung', st.erf); }
 
+  /* ---- Angaben je Code (Vertrag 7.4) ---- */
+  function angabe(code) {
+    return st.codes.hasOwnProperty(code) ? st.codes[code] : null;
+  }
+  function angabenText(a) {
+    if (!a) { return ''; }
+    var t = [], m = ((a.material || '') + ' ' + (a.zusatz || '')).trim();
+    if (a.kat && a.kat !== 'F') { t.push(KATN[a.kat]); }
+    if (m) { t.push(m); }
+    if (a.farbe) { t.push(a.farbe); }
+    if (a.hersteller) { t.push(a.hersteller); }
+    return t.join(' · ');
+  }
+  function speichereCodes() {
+    try {
+      var k, l = [];
+      for (k in st.codes) { if (st.codes.hasOwnProperty(k)) { l.push(k); } }
+      if (l.length > MAX_CODES) {
+        l.sort(function (x, y) { return st.codes[x].zeit - st.codes[y].zeit; });
+        for (k = 0; k < l.length - MAX_CODES; k++) { delete st.codes[l[k]]; }
+      }
+    } catch (e) { /* egal */ }
+    schreib('codes', st.codes);
+  }
+
   /* ---- Anzeige ---- */
   function offen() {
-    var ids = ['ovlFrage', 'ovlSenden', 'ovlArchiv', 'ovlEinst'];
-    for (var i = 0; i < ids.length; i++) { if (!$(ids[i]).hidden) { return ids[i]; } }
+    for (var i = 0; i < OVLS.length; i++) { if (!$(OVLS[i]).hidden) { return OVLS[i]; } }
     return null;
   }
   function zeige(id) {
-    var ids = ['ovlFrage', 'ovlSenden', 'ovlArchiv', 'ovlEinst'];
-    for (var i = 0; i < ids.length; i++) { $(ids[i]).hidden = (ids[i] !== id); }
+    for (var i = 0; i < OVLS.length; i++) { $(OVLS[i]).hidden = (OVLS[i] !== id); }
     try { document.activeElement.blur(); } catch (e) { /* egal */ }
   }
   function zu(id) { $(id).hidden = true; }
@@ -329,10 +460,11 @@ function mailtoHref(an, betreff, body) {
     if (offen()) { return; }
     try { $('scan').focus(); } catch (e) { /* egal */ }
   }
-  function meld(text, art, klein) {
+  function meld(text, art, klein, ang) {
     var s = $('status');
     s.className = 'status' + (art ? ' ' + art : '');
     s.textContent = text;
+    if (ang) { s.appendChild(el('small', 'sa', ang)); }
     if (klein) { s.appendChild(el('small', '', klein)); }
   }
   function rotBlinken() {
@@ -364,9 +496,12 @@ function mailtoHref(an, betreff, body) {
       z = st.erf.zeilen[i];
       k = z.modus + '|' + z.code;
       li = el('li', 'zeile' + (k === blinkKey ? ' blink' : ''));
+      li.setAttribute('data-a', 'ang'); li.setAttribute('data-i', i);
       li.appendChild(el('span', 'badge b' + z.modus, z.modus));
       mid = el('div', 'mitte');
       mid.appendChild(el('div', 'code', z.code));
+      info = angabenText(angabe(z.code));
+      mid.appendChild(el('div', info ? 'ang' : 'ang ohne', info || 'Angaben ergänzen ✎'));
       info = NAMEN[z.modus] + ' · ' + z.zeit.substr(11, 8);
       if (z.klar) { info += ' · ' + kurzText(z.klar, 70); }
       mid.appendChild(el('div', 'info', info));
@@ -418,7 +553,8 @@ function mailtoHref(an, betreff, body) {
     speichereErf();
     render(z.modus + '|' + z.code);
     meld(NAMEN[z.modus] + ': ' + z.code + ' → ' + z.menge, 'ok',
-      r.klar ? 'Langer Code, gekürzt. Klartext: ' + kurzText(r.klar, 160) : (ohneFokus ? '(ohne Fokus erfasst)' : null));
+      r.klar ? 'Langer Code, gekürzt. Klartext: ' + kurzText(r.klar, 160) : (ohneFokus ? '(ohne Fokus erfasst)' : null),
+      angabenText(angabe(z.code)));
   }
 
   function zeilenKlick(e) {
@@ -428,6 +564,7 @@ function mailtoHref(an, betreff, body) {
     var a = t.getAttribute('data-a'), i = parseInt(t.getAttribute('data-i'), 10), z = st.erf.zeilen[i];
     if (!z) { return; }
     if (lies('ausstehend', null)) { frageZeigen(); return; }
+    if (a === 'ang') { angOeffnen(z.code); return; }
     var min = z.modus === 'Z' ? 0 : 1;
     if (a === 'plus') {
       if (z.menge < MAX_MENGE) { z.menge++; }
@@ -452,16 +589,28 @@ function mailtoHref(an, betreff, body) {
       einstOeffnen();
       return;
     }
+    /* Fassungszeit streng steigend je Erfassung: stellt iOS die Uhr zurueck, wuerde der Hub
+       eine neuere Fassung sonst als "doppelt" verwerfen (Fable-Kritik 22.11.). */
+    var ms = Math.floor(Date.now() / 1000) * 1000;
+    if (st.erf.letzte_fassung_ms && ms <= st.erf.letzte_fassung_ms) { ms = st.erf.letzte_fassung_ms + 1000; }
+    st.erf.letzte_fassung_ms = ms;
+    speichereErf();
     var m = {
       geraet: st.einst.geraet, installation: st.inst, nummer: st.nummer,
-      sendung_id: st.erf.sendung_id, fassung_zeit: isoLokal(new Date())
+      sendung_id: st.erf.sendung_id, fassung_zeit: isoLokal(new Date(ms))
     };
-    var mail = baueMail(m, st.erf.zeilen);
+    var ang = [];
+    try { ang = waehleAngaben(st.erf.zeilen, st.codes); } catch (e) { ang = []; }
+    var mail = baueMail(m, st.erf.zeilen, ang);
     m.betreff = mail.betreff; m.body = mail.body; m.zeilen = mail.zeilen; m.summe = mail.summe;
+    m.angaben = mail.angaben; /* [{code, zeit}]: bei „Ja“ gilt genau dieser Stand als übertragen */
     bereit = m;
-    $('lnkMail').href = mailtoHref(st.einst.empfaenger, mail.betreff, mail.body);
+    var href = mailtoHref(st.einst.empfaenger, mail.betreff, mail.body), na = mail.angaben.length;
+    $('lnkMail').href = href;
+    $('sWarn').hidden = href.length <= MAILTO_WARN;
     $('sTitel').textContent = 'Sendung Nr. ' + m.nummer;
     $('sText').textContent = mail.zeilen + (mail.zeilen === 1 ? ' Zeile' : ' Zeilen') + ', Summe ' + mail.summe +
+      (na ? ' + ' + na + (na === 1 ? ' Angabe' : ' Angaben') : '') +
       ' · an ' + st.einst.empfaenger + '. In der Mail nur noch auf „Senden“ tippen, nichts ändern. Danach zurück zur App.';
     zeige('ovlSenden');
   }
@@ -494,11 +643,13 @@ function mailtoHref(an, betreff, body) {
       if (!schon) {
         st.archiv.unshift({
           nummer: mk.nummer, sendung_id: mk.sendung_id, fassung_zeit: mk.fassung_zeit, geraet: mk.geraet,
-          installation: mk.installation, zeilen: mk.zeilen, summe: mk.summe, betreff: mk.betreff, body: mk.body
+          installation: mk.installation, zeilen: mk.zeilen, summe: mk.summe, betreff: mk.betreff, body: mk.body,
+          angaben: mk.angaben ? mk.angaben.length : 0
         });
         if (st.archiv.length > 20) { st.archiv.length = 20; }
         schreib('archiv', st.archiv);
       }
+      angabenGesendet(mk.angaben);
       if (st.nummer <= mk.nummer) { st.nummer = mk.nummer + 1; schreib('nummer', st.nummer); }
       if (st.erf.sendung_id === mk.sendung_id) { st.erf = { sendung_id: neueId(), zeilen: [] }; speichereErf(); }
       loesch('ausstehend');
@@ -507,6 +658,16 @@ function mailtoHref(an, betreff, body) {
     zu('ovlFrage');
     render();
     fokus();
+  }
+  function angabenGesendet(l) {
+    var i, a, neu = false;
+    try {
+      for (i = 0; l && i < l.length; i++) {
+        a = angabe(l[i].code);
+        if (a && a.zeit === l[i].zeit && !a.gesendet) { a.gesendet = true; neu = true; }
+      }
+    } catch (e) { /* egal */ }
+    if (neu) { speichereCodes(); }
   }
   function antwortNein() {
     loesch('ausstehend');
@@ -528,7 +689,8 @@ function mailtoHref(an, betreff, body) {
     for (i = 0; i < st.archiv.length; i++) {
       a = st.archiv[i];
       d = el('div', 'ae');
-      d.appendChild(el('b', '', 'Nr. ' + a.nummer + ' · ' + datum(a.fassung_zeit) + ' · ' + a.zeilen + ' Zeilen · Summe ' + a.summe));
+      d.appendChild(el('b', '', 'Nr. ' + a.nummer + ' · ' + datum(a.fassung_zeit) + ' · ' + a.zeilen + ' Zeilen · Summe ' + a.summe +
+        (a.angaben ? ' · ' + a.angaben + ' Angaben' : '')));
       d.appendChild(el('div', 'info', 'Sendung ' + a.sendung_id + ' · ' + a.geraet + ' · Fassung ' + a.fassung_zeit));
       det = el('details');
       det.appendChild(el('summary', '', 'Inhalt zeigen'));
@@ -558,7 +720,36 @@ function mailtoHref(an, betreff, body) {
       ' · Prüfwert Kurzcode HTTPS://EXAMPLE.COM/A = ' + kurzcode('HTTPS://EXAMPLE.COM/A') +
       (speicherOk ? '' : ' · SPEICHER NICHT VERFÜGBAR');
     testLink();
+    $('eCodes').open = false;
+    codesListe();
     zeige('ovlEinst');
+  }
+  function codesListe() {
+    var box = $('eCodes'), l = [], k, i, a, d, b;
+    for (k in st.codes) { if (st.codes.hasOwnProperty(k)) { l.push(k); } }
+    l.sort(function (x, y) { return st.codes[y].zeit - st.codes[x].zeit; });
+    box.innerHTML = '';
+    box.appendChild(el('summary', '', 'Gespeicherte Codes (' + l.length + ')'));
+    if (!l.length) { box.appendChild(el('p', 'info', 'Noch keine. Angaben erfassen: in der Liste auf eine Zeile tippen.')); }
+    for (i = 0; i < l.length; i++) {
+      a = st.codes[l[i]];
+      d = el('div', 'gc');
+      b = el('button', '', 'Löschen'); b.type = 'button'; b.setAttribute('data-c', l[i]);
+      d.appendChild(b);
+      d.appendChild(el('div', 'code', l[i]));
+      d.appendChild(el('div', '', angabenText(a)));
+      d.appendChild(el('div', 'info', a.gesendet ? 'an den Hub übertragen' : 'noch nicht übertragen'));
+      box.appendChild(d);
+    }
+  }
+  function codesKlick(e) {
+    var t = e.target, c = t.getAttribute ? t.getAttribute('data-c') : null;
+    if (!c) { return; }
+    if (t.getAttribute('data-s') !== '1') { t.setAttribute('data-s', '1'); t.textContent = 'Wirklich löschen?'; t.className = 'rot'; return; }
+    delete st.codes[c];
+    speichereCodes();
+    codesListe();
+    render();
   }
   function einstPruefen() {
     var em = $('eEmpf').value.trim(), g = $('eGeraet').value.trim();
@@ -589,9 +780,125 @@ function mailtoHref(an, betreff, body) {
     $('eFehler').textContent = 'Testmail geöffnet. Im Hub wird sie nicht gebucht (keine Datenzeilen).';
   }
 
-  /* ---- Start ---- */
-  function schliessen() { zu(offen() || 'ovlSenden'); bereit = null; render(); fokus(); }
+  /* ---- Angaben-Fenster ---- */
+  var ang = null; /* {code, kat} */
+  function feld(k) {
+    for (var i = 0; i < FELDER.length; i++) { if (FELDER[i].k === k) { return FELDER[i]; } }
+    return null;
+  }
+  function feldWert(k) { return $('i_' + k).value.replace(/\s+/g, ' ').trim(); }
+  function zKey(k) { return k === 'material' ? 'material.' + ang.kat : k; }
+  function gl(v) { return asciiFeld(v, 99).toLowerCase(); } /* Weiß = Weiss, PLA = pla */
+  function vorschlaege(f) {
+    var l = (st.zuletzt[zKey(f.k)] || []).concat(f.k === 'material' ? MATERIAL[ang.kat] : f.v);
+    var out = [], seen = {}, i, v;
+    for (i = 0; i < l.length; i++) {
+      v = l[i];
+      if (typeof v !== 'string' || !gl(v) || seen.hasOwnProperty(gl(v))) { continue; }
+      seen[gl(v)] = 1;
+      out.push(v);
+    }
+    return out;
+  }
+  function wahlRender(f) {
+    var box = $('w_' + f.k), w = gl(feldWert(f.k)), l = vorschlaege(f), i, b;
+    box.innerHTML = '';
+    for (i = 0; i < l.length; i++) {
+      b = el('button', w && gl(l[i]) === w ? 'an' : '', l[i]);
+      b.type = 'button'; b.setAttribute('data-k', f.k); b.setAttribute('data-v', l[i]);
+      box.appendChild(b);
+    }
+  }
+  function katRender() {
+    var b = $('aKat').childNodes, i;
+    for (i = 0; i < b.length; i++) { b[i].className = b[i].getAttribute('data-kat') === ang.kat ? 'an' : ''; }
+    for (i = 0; i < FELDER.length; i++) { wahlRender(FELDER[i]); }
+  }
+  function angOeffnen(code) {
+    var a = angabe(code), i;
+    ang = { code: code, kat: (a && a.kat) ? a.kat : (/^[FHPV][0-9]{4}$/.test(code) ? code.charAt(0) : 'F') };
+    $('aCode').textContent = code;
+    for (i = 0; i < FELDER.length; i++) { $('i_' + FELDER[i].k).value = a ? a[FELDER[i].k] : ''; }
+    katRender();
+    zeige('ovlAng');
+    $('ovlAng').scrollTop = 0;
+  }
+  function angSpeichern() {
+    if (!ang) { schliessen(); return; }
+    var code = ang.code, alt = angabe(code), neu = { kat: ang.kat }, leer = true, gleich = !!alt, i, k, l;
+    for (i = 0; i < FELDER.length; i++) {
+      k = FELDER[i].k;
+      neu[k] = feldWert(k);
+      if (neu[k]) { leer = false; }
+      if (alt && alt[k] !== neu[k]) { gleich = false; }
+    }
+    if (alt && alt.kat !== neu.kat) { gleich = false; }
+    if (leer) {
+      if (alt) { delete st.codes[code]; speichereCodes(); meld('Angaben zu ' + code + ' gelöscht.'); }
+      else { meld('Nichts gespeichert (alle Felder leer).'); }
+    } else if (gleich) {
+      meld('Angaben zu ' + code + ' unverändert.', 'ok', null, angabenText(alt));
+    } else {
+      neu.gesendet = false; /* jede Aenderung geht mit der naechsten Sendung neu raus */
+      neu.zeit = Math.max(Date.now(), alt ? alt.zeit + 1 : 0);
+      st.codes[code] = neu;
+      speichereCodes();
+      for (i = 0; i < FELDER.length; i++) {
+        k = FELDER[i].k;
+        if (!neu[k]) { continue; }
+        l = st.zuletzt[zKey(k)] || [];
+        l = l.filter(function (x) { return gl(x) !== gl(neu[k]); });
+        l.unshift(neu[k]);
+        st.zuletzt[zKey(k)] = l.slice(0, MAX_ZULETZT);
+      }
+      schreib('zuletzt', st.zuletzt);
+      meld('Angaben zu ' + code + ' gespeichert.', 'ok', null, angabenText(neu));
+    }
+    ang = null;
+    zu('ovlAng');
+    render();
+    fokus();
+  }
+  function angKlick(e) {
+    var t = e.target, k = t.getAttribute ? t.getAttribute('data-k') : null, f = k ? feld(k) : null;
+    if (!f || !ang) { return; }
+    var inp = $('i_' + k), v = t.getAttribute('data-v');
+    inp.value = (gl(feldWert(k)) === gl(v)) ? '' : v;
+    wahlRender(f);
+  }
+  function katKlick(e) {
+    var k = e.target.getAttribute ? e.target.getAttribute('data-kat') : null;
+    if (!k || !ang || k === ang.kat) { return; }
+    var m = gl(feldWert('material')), i;
+    /* Material-Knopf der alten Kategorie passt nicht zur neuen */
+    for (i = 0; i < MATERIAL[ang.kat].length; i++) {
+      if (gl(MATERIAL[ang.kat][i]) === m) { $('i_material').value = ''; }
+    }
+    ang.kat = k;
+    katRender();
+  }
+  function angAufbauen() {
+    var box = $('aFelder'), kb = $('aKat'), i, f, w, inp, b;
+    for (i = 0; i < KATS.length; i++) {
+      b = el('button', '', KATS[i][1]); b.type = 'button'; b.setAttribute('data-kat', KATS[i][0]);
+      kb.appendChild(b);
+    }
+    for (i = 0; i < FELDER.length; i++) {
+      f = FELDER[i];
+      box.appendChild(el('div', 'lbl', f.t));
+      w = el('div', 'wahl'); w.id = 'w_' + f.k;
+      box.appendChild(w);
+      inp = el('input', 'ti'); inp.id = 'i_' + f.k; inp.type = 'text'; inp.maxLength = f.max; inp.placeholder = f.ph;
+      inp.setAttribute('autocapitalize', 'words'); inp.setAttribute('autocorrect', 'off');
+      inp.setAttribute('spellcheck', 'false'); inp.setAttribute('autocomplete', 'off');
+      box.appendChild(inp);
+    }
+  }
 
+  /* ---- Start ---- */
+  function schliessen() { zu(offen() || 'ovlSenden'); bereit = null; ang = null; render(); fokus(); }
+
+  angAufbauen();
   laden();
   if (!speicherOk) {
     warnen('Achtung: Speicher (localStorage) nicht verfügbar – Erfassung geht beim Schließen verloren. Nicht im privaten Modus nutzen, App vom Home-Bildschirm starten.');
@@ -629,6 +936,19 @@ function mailtoHref(an, betreff, body) {
   $('eGeraet').addEventListener('input', testLink);
   $('lnkTest').addEventListener('click', testKlick);
   $('eZu').addEventListener('click', schliessen);
+  $('eCodes').addEventListener('click', codesKlick);
+  $('aKat').addEventListener('click', katKlick);
+  $('aFelder').addEventListener('click', angKlick);
+  $('aFelder').addEventListener('input', function (e) {
+    var f = e.target && e.target.id ? feld(e.target.id.substr(2)) : null;
+    if (f && ang) { wahlRender(f); }
+  });
+  $('aSpeichern').addEventListener('click', angSpeichern);
+  $('aLeeren').addEventListener('click', function () {
+    for (var i = 0; i < FELDER.length; i++) { $('i_' + FELDER[i].k).value = ''; }
+    if (ang) { katRender(); }
+  });
+  $('aAbbr').addEventListener('click', schliessen);
 
   /* Zusatz-Probe P3: Scanner-Eingabe ohne Fokus */
   document.addEventListener('keydown', function (e) {

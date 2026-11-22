@@ -1,5 +1,5 @@
 /* Lager-App: Offline-Cache. Bei jeder Änderung an index.html VERSION erhöhen (auch in index.html). */
-var VERSION = '1.0.0';
+var VERSION = '1.1.0';
 var CACHE = 'lager-app-' + VERSION;
 var DATEIEN = ['./', 'index.html', 'icon-180.png'];
 

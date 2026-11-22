@@ -28,6 +28,12 @@ lädt die neue Fassung im Hintergrund und zeigt sie beim nächsten Start.
 - Code scannen oder eintippen + Enter/OK. Gleicher Code im selben Modus → Menge +1, die Zeile blinkt.
   Ungültig → „Scan unvollständig – nochmal“ (rot).
 - −/+/✕ je Zeile. Zählung erlaubt Menge 0. Höchstens 80 Zeilen, dann „bitte erst senden“.
+- **Zählung: einen Artikel immer in EINER Sendung fertig zählen.** Der Hub summiert Zählzeilen
+  eines Artikels nur innerhalb einer Sendung; eine spätere Sendung mit demselben Artikel ersetzt
+  die frühere Zählung (sonst gälte z. B. 2 statt 3 + 2).
+- iPad: Einstellungen › Allgemein › Datum & Uhrzeit › **Automatisch** an (der Hub lehnt Sendungen
+  mit falscher Uhr ab) und Tastatur › **Intelligente Interpunktion aus** (sonst ändert iOS `--`
+  und Anführungszeichen in eingetippten Codes).
 - **Senden** → „Mail öffnen“ → in Mail auf Senden tippen → zurück über „◀ Lager“ → **„Mail
   gesendet?“**: **Ja** = ins Archiv, Liste leer, Nummer +1. **Nein** = Liste bleibt mit derselben
   Sendungs-ID; beim nächsten Senden ersetzt der Hub die frühere Fassung. Die Frage kommt auch nach
@@ -42,6 +48,37 @@ lädt die neue Fassung im Hintergrund und zeigt sie beim nächsten Start.
   US), sonst werden `/ : -` und Y/Z in Links vertauscht. Prüfen mit einem eigenen Code (`F0007`),
   einer EAN und einem Karton-QR, dessen Klartext man vom iPhone kennt.
 - Bis der Scanner da ist: Codes von Hand ins Feld tippen.
+
+## Angaben je Code (ab Version 1.1.0)
+
+Damit im Hub nicht nur eine nackte Nummer ankommt, kann man zu jedem Code freiwillig Angaben
+hinterlegen. Sie liegen in einer **lokalen Code-Datenbank** auf dem iPad und füllen sich beim
+nächsten Scan desselben Codes selbst aus.
+
+- In der Liste zeigt jede Zeile unter dem Code die Angaben („PETG HF · Weiss · Bambu Lab“) bzw.
+  **„Angaben ergänzen ✎“**. Zeile antippen (nicht −/+/✕) öffnet das **Angaben-Fenster**:
+  - **Kategorie**: Filament / Harz / Pulver / Verbrauch (vorgewählt nach eigenem Code F/H/P/V,
+    sonst Filament).
+  - **Material**: Knöpfe je Kategorie (Filament PLA … PVA, Harz Standard … Hochtemp, Pulver PA12,
+    PA11, TPU, Verbrauch keine) + Freitext „anderes Material“.
+  - **Hersteller**, **Farbe**, **Zusatz** (z. B. Matt, HF, CF): Knöpfe + Freitext. Die zuletzt
+    selbst benutzten Werte stehen vorne. Ein Knopf füllt das Feld, nochmal tippen leert es.
+  - **Speichern** · **Leeren** (leert nur die Felder; danach Speichern = Angaben löschen) ·
+    **Abbrechen**. Nach dem Schließen steht der Cursor wieder im Scan-Feld.
+  - Gespeichert wird nur, wenn Material, Hersteller, Farbe oder Zusatz ausgefüllt ist.
+- Scan eines Codes mit Angaben zeigt sie sofort in der Zeile und in der Statusmeldung.
+- **Senden**: Für Codes dieser Erfassung, deren Angaben neu oder geändert sind, hängt die App je
+  Code eine A-Zeile an (siehe Mail-Format). „Mail gesendet? – **Ja**“ merkt sich genau diesen Stand
+  als übertragen (nur wenn er seit dem Senden nicht geändert wurde); beim nächsten Mal geht er
+  nicht mehr mit. Jede Änderung schickt die Angaben erneut. „Nein“ ändert nichts. „Erneut senden“
+  aus dem Archiv schickt den gespeicherten Text unverändert.
+- Ist der Mail-Link länger als 15.000 Zeichen, erscheint vor „Mail öffnen“ der Hinweis „Sehr lange
+  Mail – lieber in zwei Sendungen teilen“ (gesperrt wird nichts). Richtwert: 80 Zeilen mit voll
+  ausgefüllten Angaben ≈ 21.000 Zeichen, 80 Zeilen ohne Angaben ≈ 6.000.
+- ⚙ → **Gespeicherte Codes (n)**: alle Angaben mit Stand „übertragen“ / „noch nicht übertragen“,
+  Löschen je Code (zweimal tippen). Höchstens 500 Codes, die ältesten fallen heraus.
+- Im Hub erscheinen die Angaben bei „Unbekannte Codes“ (Zuordnen-Vorschlag, „Neu anlegen“
+  vorbefüllt, „Alle mit Angaben anlegen“) und bei den Codes eines Artikels.
 
 ## Codes (Bau-Vertrag Abschnitt 1)
 
@@ -70,6 +107,18 @@ Zeiten sekundengenau mit Zeitzone (`2026-11-22T14:05:31+01:00`). Jede Zeile beh�
 ersten Scans; die Fassungszeit wird bei jedem Senden neu gesetzt (beim „Erneut senden“ aus dem
 Archiv nicht). Installations-ID und Sendungs-ID: 6 Zeichen aus `0123456789ABCDEFGHJKMNPQRSTVWX`.
 
+**Angaben-Zeile** (optional, ab App 1.1.0, Bau-Vertrag 7.1): nach den Datenzeilen, vor `L;ENDE`,
+höchstens eine je Code, mindestens ein Feld gefüllt:
+
+```
+L;A;<code>;<kat F|H|P|V oder leer>;<material>;<hersteller>;<farbe>;<zusatz>
+```
+
+Beispiel: `L;A;F0007;F;PETG;Bambu Lab;Weiss;HF`. Die App wandelt Umlaute um (ä→ae … ß→ss),
+entfernt Akzente, sonstige Nicht-ASCII-Zeichen und `;`, trimmt und kappt auf 24/24/24/32 Zeichen.
+A-Zeilen zählen **nicht** in der Fußzeile. Der Hub ignoriert eine ungültige A-Zeile mit Warnung;
+die Sendung bleibt gültig.
+
 **Testmail** (⚙): Betreff `#lager test`, eine Zeile Text, **keine `L;`-Zeilen**. Der Hub erkennt sie
 am Betreff als Lager-Mail, findet weder Kopf- noch Fußzeile und bucht nichts (unvollständig). Sie
 prüft nur, ob Konto, Versand und Absender-Freigabe funktionieren; eine abgelehnte Mail erscheint im
@@ -78,7 +127,9 @@ Hub im Kasten „Sendungen“.
 ## Speicher (`localStorage`, Schlüssel `lager.v1.*`)
 
 `installation`, `nummer`, `erfassung` (Zeilen + Sendungs-ID), `ausstehend` (Marke „Mail geöffnet,
-Antwort fehlt“), `archiv` (20), `einstellungen`. Ist der Speicher nicht verfügbar, zeigt die App
+Antwort fehlt“, ab 1.1.0 mit den gesendeten Angaben-Ständen), `archiv` (20), `einstellungen`,
+`codes` (Angaben je Code: `kat`, `material`, `hersteller`, `farbe`, `zusatz`, `gesendet`, `zeit`;
+höchstens 500), `zuletzt` (zuletzt benutzte Werte für die Vorschlagsknöpfe). Ist der Speicher nicht verfügbar, zeigt die App
 oben einen roten Hinweis.
 
 ## Proben vor dem Einsatz (Konzept Kapitel 6)
@@ -99,3 +150,7 @@ oben einen roten Hinweis.
 - [ ] **T6** dieselbe Sendung erneut senden (Archiv): nichts doppelt
 - [ ] **T7** „Nein“ antworten, weiterscannen, erneut senden: Hub ersetzt die Fassung, nichts doppelt
 - [ ] **T8** Nr. 2 auslassen (senden, „Ja“, Mail aber löschen), Nr. 3 senden: Hub meldet „Sendung 2 fehlt“
+- [ ] **T9** (1.1.0) Zeile antippen → Angaben mit Umlaut speichern → Senden: Mail enthält `L;A;…` mit
+  `ae/oe/ue`; „Ja“ → nächste Sendung desselben Codes ohne A-Zeile; im Hub stehen die Angaben beim Code.
+  Tastatur im Angaben-Fenster: Großschreibung am Wortanfang, keine Autokorrektur; nach Schließen
+  Cursor im Scan-Feld und Scanner tippt wieder dort hinein.
