@@ -1,11 +1,18 @@
 /* Lager-App: Offline-Cache. Bei jeder Änderung an index.html VERSION erhöhen (auch in index.html). */
-var VERSION = '1.1.0';
+var VERSION = '1.1.1';
 var CACHE = 'lager-app-' + VERSION;
 var DATEIEN = ['./', 'index.html', 'icon-180.png'];
 
+/* Beim Update die Dateien mit ?v=VERSION holen: GitHub Pages erlaubt 10 min Browser-Cache, sonst
+   landet die ALTE index.html im neuen Cache (22.11.: iPad zeigte nach dem Upload weiter 1.0). */
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    return c.addAll(DATEIEN);
+    return Promise.all(DATEIEN.map(function (f) {
+      return fetch(f + '?v=' + VERSION).then(function (res) {
+        if (!res || !res.ok) { throw new Error('Laden fehlgeschlagen: ' + f); }
+        return c.put(f, res);
+      });
+    }));
   }).then(function () {
     return self.skipWaiting();
   }));
