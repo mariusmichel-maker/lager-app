@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Lager">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Lager</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:#fff;color:#111;font:18px/1.35 -apple-system,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:120px}
+.m-E{--m:#c62828}.m-W{--m:#2e7d32}.m-Z{--m:#1565c0}
+button,.btn{touch-action:manipulation;-webkit-appearance:none;border:0;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;color:#111;background:#e3e3e3;text-decoration:none;display:inline-block;text-align:center}
+button:disabled{background:#bbb!important;color:#666!important}
+.warn{background:#b00000;color:#fff;padding:14px 16px;font-weight:700;font-size:20px}
+header{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:14px 16px;color:#fff;background:var(--m)}
+.titel{-webkit-flex:1;flex:1}
+.titel b{font-size:32px;display:block}
+.titel small{font-size:16px;opacity:.9}
+.kb{height:64px;min-width:64px;padding:0 18px;margin-left:10px;background:rgba(255,255,255,.2);color:#fff;font-size:20px;border:2px solid rgba(255,255,255,.7)}
+.kb.zahn{font-size:32px;padding:0 12px}
+.modi{display:-webkit-flex;display:flex;padding:12px 10px 4px}
+.mb{-webkit-flex:1;flex:1;height:76px;margin:0 6px;font-size:22px;background:#fff;border:4px solid;}
+.mE{color:#c62828;border-color:#c62828}.mW{color:#2e7d32;border-color:#2e7d32}.mZ{color:#1565c0;border-color:#1565c0}
+.mb.an{color:#fff}.mE.an{background:#c62828}.mW.an{background:#2e7d32}.mZ.an{background:#1565c0}
+.scan{display:-webkit-flex;display:flex;padding:10px 16px}
+.scan input{-webkit-flex:1;flex:1;min-width:0;height:80px;font:700 30px/1 Menlo,Courier,monospace;padding:0 14px;border:4px solid var(--m);border-radius:12px;text-transform:uppercase;-webkit-appearance:none;background:#fff;color:#000}
+.scan input::-webkit-input-placeholder{text-transform:none;font:400 22px -apple-system,Helvetica,Arial,sans-serif;color:#777}
+.scan input::placeholder{text-transform:none;font:400 22px -apple-system,Helvetica,Arial,sans-serif;color:#777}
+.scan button{width:110px;height:80px;margin-left:10px;font-size:26px;background:var(--m);color:#fff}
+.status{margin:0 16px;padding:12px 14px;border-radius:12px;font-size:22px;font-weight:700;background:#f1f1f1;min-height:54px;word-break:break-all}
+.status small{display:block;font-weight:400;font-size:16px;color:#333}
+.status.err{background:#ffd6d6;color:#a00000}
+.status.ok{background:#dcf2dc;color:#1b5e20}
+.flash .scan input,.flash .status{-webkit-animation:rot .8s;animation:rot .8s}
+@-webkit-keyframes rot{0%,50%{background:#ff1744;color:#fff}100%{background:#fff}}
+@keyframes rot{0%,50%{background:#ff1744;color:#fff}100%{background:#fff}}
+.liste{list-style:none;margin:12px 0 0;padding:0}
+.zeile{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:10px 16px;border-bottom:2px solid #ddd}
+.zeile.blink{-webkit-animation:gelb 1s;animation:gelb 1s}
+@-webkit-keyframes gelb{0%,40%{background:#ffe066}100%{background:#fff}}
+@keyframes gelb{0%,40%{background:#ffe066}100%{background:#fff}}
+.badge{width:52px;height:52px;line-height:52px;border-radius:10px;color:#fff;text-align:center;font-weight:700;font-size:26px;-webkit-flex:none;flex:none}
+.bE{background:#c62828}.bW{background:#2e7d32}.bZ{background:#1565c0}
+.mitte{-webkit-flex:1;flex:1;min-width:0;padding:0 12px}
+.code{font:700 24px/1.2 Menlo,Courier,monospace;word-break:break-all}
+.info{font-size:15px;color:#444;word-break:break-all}
+.qb{width:68px;height:68px;font-size:34px;margin-left:8px;-webkit-flex:none;flex:none}
+.qb.weg{background:#fff;border:3px solid #999;color:#555;font-size:28px;margin-left:16px}
+.menge{min-width:64px;text-align:center;font-size:32px;font-weight:700;-webkit-flex:none;flex:none}
+.leer{padding:30px 16px;color:#666;text-align:center;font-size:20px}
+footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#fff;border-top:2px solid #ccc}
+.senden{width:100%;height:84px;font-size:28px;background:#111;color:#fff}
+.ovl{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:10;overflow:auto;-webkit-overflow-scrolling:touch;padding:40px 16px}
+.pnl{background:#fff;border-radius:16px;padding:22px;max-width:660px;margin:0 auto}
+.pnl h2{margin:0 0 12px;font-size:30px}
+.pnl p{margin:8px 0}
+.gross{display:block;width:100%;height:80px;line-height:80px;font-size:26px;margin-top:14px;padding:0}
+.gruen{background:#2e7d32;color:#fff}.rot{background:#c62828;color:#fff}
+.feld{display:block;margin-top:14px;font-weight:700}
+.feld input{display:block;width:100%;height:64px;font-size:22px;padding:0 12px;margin-top:6px;border:3px solid #555;border-radius:10px;-webkit-appearance:none}
+.fehler{color:#b00000;font-weight:700;min-height:24px;margin-top:10px}
+.ae{border:2px solid #ccc;border-radius:12px;padding:12px;margin-top:12px}
+.ae b{font-size:20px}
+.ae summary{padding:10px 0;font-weight:700}
+.ae pre{white-space:pre-wrap;word-break:break-all;font-size:13px;background:#f4f4f4;padding:8px;margin:0}
+.ae .btn{width:100%;height:64px;line-height:64px;margin-top:10px;font-size:22px}
+</style>
+</head>
+<body class="m-E">
+<div id="warn" class="warn" hidden></div>
+<header>
+  <div class="titel"><b id="modusName">Entnahme</b><small id="kopfInfo"></small></div>
+  <button id="btnArchiv" class="kb" type="button">Archiv</button>
+  <button id="btnEinst" class="kb zahn" type="button" aria-label="Einstellungen">&#9881;</button>
+</header>
+<div class="modi">
+  <button type="button" class="mb mE" data-m="E">Entnahme</button>
+  <button type="button" class="mb mW" data-m="W">Wareneingang</button>
+  <button type="button" class="mb mZ" data-m="Z">Z&auml;hlung</button>
+</div>
+<form id="scanForm" class="scan" autocomplete="off" action="#">
+  <input id="scan" type="text" autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off" placeholder="Code scannen / eintippen">
+  <button type="submit">OK</button>
+</form>
+<div id="status" class="status">Bereit.</div>
+<ul id="liste" class="liste"></ul>
+<div id="leer" class="leer">Noch nichts erfasst.</div>
+<footer><button id="btnSenden" class="senden" type="button">Senden</button></footer>
+
+<div id="ovlSenden" class="ovl" hidden><div class="pnl">
+  <h2 id="sTitel">Senden</h2>
+  <p id="sText"></p>
+  <a id="lnkMail" class="btn gross gruen" href="#">&#9993; Mail &ouml;ffnen</a>
+  <button id="sAbbr" class="gross" type="button">Abbrechen</button>
+</div></div>
+
+<div id="ovlFrage" class="ovl" hidden><div class="pnl">
+  <h2>Mail gesendet?</h2>
+  <p id="fText"></p>
+  <button id="fJa" class="gross gruen" type="button">Ja, gesendet</button>
+  <button id="fNein" class="gross rot" type="button">Nein &ndash; Liste behalten</button>
+</div></div>
+
+<div id="ovlArchiv" class="ovl" hidden><div class="pnl">
+  <h2>Archiv</h2>
+  <p class="info">Letzte 20 Sendungen. &bdquo;Erneut senden&ldquo; schickt dieselbe Sendung unver&auml;ndert noch einmal (im Hub gefahrlos).</p>
+  <div id="archivListe"></div>
+  <button id="aZu" class="gross" type="button">Schlie&szlig;en</button>
+</div></div>
+
+<div id="ovlEinst" class="ovl" hidden><div class="pnl">
+  <h2>Einstellungen</h2>
+  <label class="feld">Empf&auml;nger (Hub-Postfach)<input id="eEmpf" type="email" autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off"></label>
+  <label class="feld">Ger&auml;tename<input id="eGeraet" type="text" autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off" maxlength="24"></label>
+  <div id="eFehler" class="fehler"></div>
+  <button id="eSpeichern" class="gross gruen" type="button">Speichern</button>
+  <a id="lnkTest" class="btn gross" href="#">Testmail senden</a>
+  <p class="info" id="eInfo"></p>
+  <button id="eZu" class="gross" type="button">Schlie&szlig;en</button>
+</div></div>
+
+<script>
+/*KERN-START*/
+var ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWX';
+var KURZ_RE = /^Q[0-9A-HJKMNP-TV-X]{10}$/;
+var ID_RE = /^[0-9A-HJKMNP-TV-X]{6}$/;
+var GERAET_RE = /^[A-Za-z0-9 ._-]{1,24}$/;
+var MAX_ZEILEN = 80;
+var MAX_MENGE = 9999;
+
+function pad(n, l) {
+  var s = String(n);
+  while (s.length < l) { s = '0' + s; }
+  return s;
+}
+
+function utf8Bytes(s) {
+  var b = [], i, c, d;
+  for (i = 0; i < s.length; i++) {
+    c = s.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length) {
+      d = s.charCodeAt(i + 1);
+      if (d >= 0xDC00 && d <= 0xDFFF) { c = 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00); i++; }
+    }
+    if (c >= 0xD800 && c <= 0xDFFF) { c = 0xFFFD; }
+    if (c < 0x80) { b.push(c); }
+    else if (c < 0x800) { b.push(0xC0 | (c >> 6), 0x80 | (c & 63)); }
+    else if (c < 0x10000) { b.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63)); }
+    else { b.push(0xF0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63)); }
+  }
+  return b;
+}
+
+function fnv1a(bytes, h) {
+  for (var i = 0; i < bytes.length; i++) {
+    h = (h ^ bytes[i]) >>> 0;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function basis30(n) {
+  var s = '';
+  for (var i = 0; i < 5; i++) { s = ALPHABET.charAt(n % 30) + s; n = Math.floor(n / 30); }
+  return s;
+}
+
+/* Vertrag 2: Eingabe schon getrimmt und gross geschrieben */
+function kurzcode(s) {
+  var b = utf8Bytes(s), m = 24300000; /* 30^5 */
+  return 'Q' + basis30(fnv1a(b, 0x811C9DC5) % m) + basis30(fnv1a(b, (0x01000193 ^ 0x5BD1E995) >>> 0) % m);
+}
+
+function gtinOk(s) {
+  var summe = 0, w = 3, i;
+  for (i = s.length - 2; i >= 0; i--) { summe += (s.charCodeAt(i) - 48) * w; w = (w === 3) ? 1 : 3; }
+  return (10 - summe % 10) % 10 === s.charCodeAt(s.length - 1) - 48;
+}
+
+/* Vertrag 1 -> {ok, code, art, klar} */
+function pruefeCode(roh) {
+  var s = String(roh === undefined || roh === null ? '' : roh).trim().toUpperCase();
+  var n = s.length;
+  if (n > 24) { return { ok: true, code: kurzcode(s), art: 'kurz', klar: s }; }
+  if (/^[FHPV][0-9]+$/.test(s)) { return { ok: /^[FHPV][0-9]{4}$/.test(s), code: s, art: 'eigen' }; }
+  if (/^[0-9]+$/.test(s)) {
+    return { ok: (n === 8 || n === 12 || n === 13 || n === 14) && gtinOk(s), code: s, art: 'ean' };
+  }
+  if (/^[!-:<-~]{4,24}$/.test(s)) { return { ok: true, code: s, art: KURZ_RE.test(s) ? 'kurz' : 'sonst' }; }
+  return { ok: false, code: s, art: '' };
+}
+
+function isoLokal(d) {
+  var off = -d.getTimezoneOffset(), z = off >= 0 ? '+' : '-';
+  off = Math.abs(off);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2) + 'T' +
+    pad(d.getHours(), 2) + ':' + pad(d.getMinutes(), 2) + ':' + pad(d.getSeconds(), 2) +
+    z + pad(Math.floor(off / 60), 2) + ':' + pad(off % 60, 2);
+}
+
+function neueId() {
+  var out = '', buf, i, x;
+  var cr = (typeof window !== 'undefined') && (window.crypto || window.msCrypto);
+  while (out.length < 6) {
+    if (cr && cr.getRandomValues) { buf = new Uint8Array(16); cr.getRandomValues(buf); }
+    else { buf = []; for (i = 0; i < 16; i++) { buf.push(Math.floor(Math.random() * 256)); } }
+    for (i = 0; i < buf.length && out.length < 6; i++) {
+      x = buf[i];
+      if (x < 240) { out += ALPHABET.charAt(x % 30); } /* ohne Modulo-Schieflage */
+    }
+  }
+  return out;
+}
+
+/* Vertrag 3: m = {geraet, installation, nummer, sendung_id, fassung_zeit} */
+function baueMail(m, zeilen) {
+  var L = ['PRINTOPS-LAGER 1', 'L;S;' + m.geraet + ';' + m.installation + ';' + m.nummer + ';' + m.sendung_id + ';' + m.fassung_zeit];
+  var summe = 0, i, z;
+  for (i = 0; i < zeilen.length; i++) {
+    z = zeilen[i];
+    L.push('L;' + z.zeit + ';' + z.modus + ';' + z.code + ';' + z.menge);
+    summe += z.menge;
+  }
+  L.push('L;ENDE;' + zeilen.length + ';' + summe);
+  return { betreff: '#lager ' + m.nummer, body: L.join('\r\n') + '\r\n', zeilen: zeilen.length, summe: summe };
+}
+
+function mailtoHref(an, betreff, body) {
+  return 'mailto:' + encodeURIComponent(an).replace(/%40/g, '@') +
+    '?subject=' + encodeURIComponent(betreff) + '&body=' + encodeURIComponent(body);
+}
+/*KERN-ENDE*/
+
+(function () {
+  'use strict';
+  var VERSION = '1.0.0';
+  var NAMEN = { E: 'Entnahme', W: 'Wareneingang', Z: 'Zählung' };
+  var MAIL_RE = /^[^\s@,;?&<>"']+@[^\s@,;?&<>"']+\.[^\s@,;?&<>"']+$/;
+  var P = 'lager.v1.';
+  var LS = null, speicherOk = false, mem = {};
+  var st = { modus: 'E' }, bereit = null, puffer = '';
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (txt !== undefined && txt !== null) { e.textContent = String(txt); }
+    return e;
+  }
+  function warnen(t) { var w = $('warn'); w.textContent = t; w.hidden = false; }
+
+  /* ---- Speicher ---- */
+  try {
+    LS = window.localStorage;
+    LS.setItem(P + 'probe', '1');
+    LS.removeItem(P + 'probe');
+    speicherOk = true;
+  } catch (e) { speicherOk = false; }
+
+  function lies(k, def) {
+    var v = null;
+    try { v = speicherOk ? LS.getItem(P + k) : (mem.hasOwnProperty(k) ? mem[k] : null); } catch (e) { v = mem.hasOwnProperty(k) ? mem[k] : null; }
+    if (v === null || v === undefined) { return def; }
+    try { return JSON.parse(v); } catch (e2) { return def; }
+  }
+  function schreib(k, val) {
+    var s = JSON.stringify(val);
+    mem[k] = s;
+    if (!speicherOk) { return false; }
+    try { LS.setItem(P + k, s); return true; } catch (e) {
+      warnen('Achtung: Speichern fehlgeschlagen (Speicher voll?). Bitte senden und Archiv prüfen.');
+      return false;
+    }
+  }
+  function loesch(k) {
+    delete mem[k];
+    try { if (speicherOk) { LS.removeItem(P + k); } } catch (e) { /* egal */ }
+  }
+
+  function zeileOk(z) {
+    return z && typeof z.code === 'string' && /^[EWZ]$/.test(z.modus) && typeof z.zeit === 'string' &&
+      typeof z.menge === 'number' && z.menge >= 0 && z.menge <= MAX_MENGE && Math.floor(z.menge) === z.menge;
+  }
+
+  function laden() {
+    var inst = lies('installation', null);
+    if (typeof inst !== 'string' || !ID_RE.test(inst)) { inst = neueId(); schreib('installation', inst); }
+    st.inst = inst;
+    var n = lies('nummer', 1);
+    st.nummer = (typeof n === 'number' && n >= 1 && Math.floor(n) === n) ? n : 1;
+    schreib('nummer', st.nummer);
+    var e = lies('erfassung', null), z = [], i;
+    if (e && typeof e.sendung_id === 'string' && ID_RE.test(e.sendung_id) && e.zeilen && e.zeilen.length >= 0) {
+      for (i = 0; i < e.zeilen.length; i++) { if (zeileOk(e.zeilen[i])) { z.push(e.zeilen[i]); } }
+      st.erf = { sendung_id: e.sendung_id, zeilen: z };
+    } else {
+      st.erf = { sendung_id: neueId(), zeilen: [] };
+    }
+    schreib('erfassung', st.erf);
+    var a = lies('archiv', []);
+    st.archiv = (a && a.length >= 0) ? a : [];
+    var es = lies('einstellungen', {}) || {};
+    st.einst = {
+      empfaenger: typeof es.empfaenger === 'string' ? es.empfaenger : '',
+      geraet: (typeof es.geraet === 'string' && GERAET_RE.test(es.geraet)) ? es.geraet : 'Lager-iPad'
+    };
+  }
+  function speichereErf() { schreib('erfassung', st.erf); }
+
+  /* ---- Anzeige ---- */
+  function offen() {
+    var ids = ['ovlFrage', 'ovlSenden', 'ovlArchiv', 'ovlEinst'];
+    for (var i = 0; i < ids.length; i++) { if (!$(ids[i]).hidden) { return ids[i]; } }
+    return null;
+  }
+  function zeige(id) {
+    var ids = ['ovlFrage', 'ovlSenden', 'ovlArchiv', 'ovlEinst'];
+    for (var i = 0; i < ids.length; i++) { $(ids[i]).hidden = (ids[i] !== id); }
+    try { document.activeElement.blur(); } catch (e) { /* egal */ }
+  }
+  function zu(id) { $(id).hidden = true; }
+  function fokus() {
+    if (offen()) { return; }
+    try { $('scan').focus(); } catch (e) { /* egal */ }
+  }
+  function meld(text, art, klein) {
+    var s = $('status');
+    s.className = 'status' + (art ? ' ' + art : '');
+    s.textContent = text;
+    if (klein) { s.appendChild(el('small', '', klein)); }
+  }
+  function rotBlinken() {
+    var b = document.body;
+    b.classList.remove('flash');
+    void b.offsetWidth;
+    b.classList.add('flash');
+    setTimeout(function () { b.classList.remove('flash'); }, 900);
+  }
+  function summe() {
+    var s = 0;
+    for (var i = 0; i < st.erf.zeilen.length; i++) { s += st.erf.zeilen[i].menge; }
+    return s;
+  }
+  function kurzText(t, n) { return t.length > n ? t.substr(0, n) + '…' : t; }
+
+  function render(blinkKey) {
+    var i, z, li, mid, b, info, k, n = st.erf.zeilen.length;
+    document.body.className = 'm-' + st.modus;
+    $('modusName').textContent = NAMEN[st.modus];
+    $('kopfInfo').textContent = 'Sendung Nr. ' + st.nummer + ' · ' + n + (n === 1 ? ' Zeile' : ' Zeilen') + ' · ' + st.einst.geraet;
+    var mbs = document.querySelectorAll('.mb');
+    for (i = 0; i < mbs.length; i++) {
+      if (mbs[i].getAttribute('data-m') === st.modus) { mbs[i].classList.add('an'); } else { mbs[i].classList.remove('an'); }
+    }
+    var ul = $('liste');
+    ul.innerHTML = '';
+    for (i = n - 1; i >= 0; i--) {
+      z = st.erf.zeilen[i];
+      k = z.modus + '|' + z.code;
+      li = el('li', 'zeile' + (k === blinkKey ? ' blink' : ''));
+      li.appendChild(el('span', 'badge b' + z.modus, z.modus));
+      mid = el('div', 'mitte');
+      mid.appendChild(el('div', 'code', z.code));
+      info = NAMEN[z.modus] + ' · ' + z.zeit.substr(11, 8);
+      if (z.klar) { info += ' · ' + kurzText(z.klar, 70); }
+      mid.appendChild(el('div', 'info', info));
+      li.appendChild(mid);
+      b = el('button', 'qb', '−'); b.type = 'button'; b.setAttribute('data-a', 'minus'); b.setAttribute('data-i', i); li.appendChild(b);
+      li.appendChild(el('span', 'menge', z.menge));
+      b = el('button', 'qb', '+'); b.type = 'button'; b.setAttribute('data-a', 'plus'); b.setAttribute('data-i', i); li.appendChild(b);
+      b = el('button', 'qb weg', '✕'); b.type = 'button'; b.setAttribute('data-a', 'weg'); b.setAttribute('data-i', i); li.appendChild(b);
+      ul.appendChild(li);
+    }
+    $('leer').hidden = n > 0;
+    var bs = $('btnSenden');
+    bs.disabled = n === 0;
+    bs.textContent = n ? 'Senden (' + n + (n === 1 ? ' Zeile' : ' Zeilen') + ', Summe ' + summe() + ')' : 'Senden';
+  }
+
+  /* ---- Scannen ---- */
+  function verarbeite(roh, ohneFokus) {
+    var s = String(roh || '');
+    if (!s.replace(/\s+/g, '')) { return; }
+    if (lies('ausstehend', null)) {
+      meld('Erst „Mail gesendet?“ beantworten.', 'err');
+      rotBlinken();
+      frageZeigen();
+      return;
+    }
+    var r = pruefeCode(s), i, z = null;
+    if (!r.ok) {
+      meld('Scan unvollständig – nochmal', 'err', 'gelesen: ' + kurzText(r.code, 40) + (ohneFokus ? ' (ohne Fokus)' : ''));
+      rotBlinken();
+      return;
+    }
+    for (i = 0; i < st.erf.zeilen.length; i++) {
+      if (st.erf.zeilen[i].modus === st.modus && st.erf.zeilen[i].code === r.code) { z = st.erf.zeilen[i]; }
+    }
+    if (z) {
+      if (z.menge >= MAX_MENGE) { meld('Höchstmenge ' + MAX_MENGE + ' erreicht.', 'err'); rotBlinken(); return; }
+      z.menge++;
+    } else {
+      if (st.erf.zeilen.length >= MAX_ZEILEN) {
+        meld('Liste voll (' + MAX_ZEILEN + ' Zeilen) – bitte erst senden', 'err');
+        rotBlinken();
+        return;
+      }
+      z = { zeit: isoLokal(new Date()), modus: st.modus, code: r.code, menge: 1, art: r.art };
+      if (r.klar) { z.klar = r.klar.substr(0, 300); }
+      st.erf.zeilen.push(z);
+    }
+    speichereErf();
+    render(z.modus + '|' + z.code);
+    meld(NAMEN[z.modus] + ': ' + z.code + ' → ' + z.menge, 'ok',
+      r.klar ? 'Langer Code, gekürzt. Klartext: ' + kurzText(r.klar, 160) : (ohneFokus ? '(ohne Fokus erfasst)' : null));
+  }
+
+  function zeilenKlick(e) {
+    var t = e.target;
+    while (t && t !== this && !(t.getAttribute && t.getAttribute('data-a'))) { t = t.parentNode; }
+    if (!t || t === this) { return; }
+    var a = t.getAttribute('data-a'), i = parseInt(t.getAttribute('data-i'), 10), z = st.erf.zeilen[i];
+    if (!z) { return; }
+    if (lies('ausstehend', null)) { frageZeigen(); return; }
+    var min = z.modus === 'Z' ? 0 : 1;
+    if (a === 'plus') {
+      if (z.menge < MAX_MENGE) { z.menge++; }
+    } else if (a === 'minus') {
+      if (z.menge > min) { z.menge--; } else { meld('Kleiner geht nicht – zum Entfernen ✕ tippen.', 'err'); }
+    } else if (a === 'weg') {
+      st.erf.zeilen.splice(i, 1);
+      meld('Zeile ' + z.code + ' entfernt.');
+    }
+    speichereErf();
+    render(a === 'weg' ? null : z.modus + '|' + z.code);
+    fokus();
+  }
+
+  /* ---- Senden ---- */
+  function sendenOeffnen() {
+    if (lies('ausstehend', null)) { frageZeigen(); return; }
+    var n = st.erf.zeilen.length;
+    if (!n) { meld('Nichts zu senden.'); fokus(); return; }
+    if (!MAIL_RE.test(st.einst.empfaenger)) {
+      meld('Erst den Empfänger in den Einstellungen eintragen.', 'err');
+      einstOeffnen();
+      return;
+    }
+    var m = {
+      geraet: st.einst.geraet, installation: st.inst, nummer: st.nummer,
+      sendung_id: st.erf.sendung_id, fassung_zeit: isoLokal(new Date())
+    };
+    var mail = baueMail(m, st.erf.zeilen);
+    m.betreff = mail.betreff; m.body = mail.body; m.zeilen = mail.zeilen; m.summe = mail.summe;
+    bereit = m;
+    $('lnkMail').href = mailtoHref(st.einst.empfaenger, mail.betreff, mail.body);
+    $('sTitel').textContent = 'Sendung Nr. ' + m.nummer;
+    $('sText').textContent = mail.zeilen + (mail.zeilen === 1 ? ' Zeile' : ' Zeilen') + ', Summe ' + mail.summe +
+      ' · an ' + st.einst.empfaenger + '. In der Mail nur noch auf „Senden“ tippen, nichts ändern. Danach zurück zur App.';
+    zeige('ovlSenden');
+  }
+
+  function mailKlick(e) {
+    if (!bereit) { e.preventDefault(); return; }
+    /* Marke VOR dem Wechsel ins Mail-Programm */
+    schreib('ausstehend', bereit);
+    bereit = null;
+    setTimeout(function () { zu('ovlSenden'); frageZeigen(); }, 400);
+  }
+
+  function frageZeigen() {
+    var mk = lies('ausstehend', null);
+    if (!mk) { return; }
+    $('fText').textContent = 'Sendung Nr. ' + mk.nummer + ' (' + mk.zeilen + (mk.zeilen === 1 ? ' Zeile' : ' Zeilen') +
+      ', Summe ' + mk.summe + ', ' + datum(mk.fassung_zeit) + '). Wurde die Mail im Mail-Programm wirklich abgeschickt?';
+    zeige('ovlFrage');
+  }
+  function pruefeAusstehend() {
+    if (lies('ausstehend', null) && $('ovlFrage').hidden) { frageZeigen(); }
+  }
+
+  function antwortJa() {
+    var mk = lies('ausstehend', null), i, schon = false;
+    if (mk) {
+      for (i = 0; i < st.archiv.length; i++) {
+        if (st.archiv[i].sendung_id === mk.sendung_id && st.archiv[i].fassung_zeit === mk.fassung_zeit) { schon = true; }
+      }
+      if (!schon) {
+        st.archiv.unshift({
+          nummer: mk.nummer, sendung_id: mk.sendung_id, fassung_zeit: mk.fassung_zeit, geraet: mk.geraet,
+          installation: mk.installation, zeilen: mk.zeilen, summe: mk.summe, betreff: mk.betreff, body: mk.body
+        });
+        if (st.archiv.length > 20) { st.archiv.length = 20; }
+        schreib('archiv', st.archiv);
+      }
+      if (st.nummer <= mk.nummer) { st.nummer = mk.nummer + 1; schreib('nummer', st.nummer); }
+      if (st.erf.sendung_id === mk.sendung_id) { st.erf = { sendung_id: neueId(), zeilen: [] }; speichereErf(); }
+      loesch('ausstehend');
+      meld('Sendung Nr. ' + mk.nummer + ' abgeschlossen. Liste ist leer.', 'ok');
+    }
+    zu('ovlFrage');
+    render();
+    fokus();
+  }
+  function antwortNein() {
+    loesch('ausstehend');
+    zu('ovlFrage');
+    meld('Liste bleibt. Beim nächsten Senden geht dieselbe Sendung neu raus.');
+    render();
+    fokus();
+  }
+
+  /* ---- Archiv ---- */
+  function datum(iso) {
+    iso = String(iso || '');
+    return iso.substr(8, 2) + '.' + iso.substr(5, 2) + '.' + iso.substr(0, 4) + ' ' + iso.substr(11, 5);
+  }
+  function archivOeffnen() {
+    var box = $('archivListe'), i, a, d, det, lnk, ok = MAIL_RE.test(st.einst.empfaenger);
+    box.innerHTML = '';
+    if (!st.archiv.length) { box.appendChild(el('p', 'info', 'Noch keine Sendungen.')); }
+    for (i = 0; i < st.archiv.length; i++) {
+      a = st.archiv[i];
+      d = el('div', 'ae');
+      d.appendChild(el('b', '', 'Nr. ' + a.nummer + ' · ' + datum(a.fassung_zeit) + ' · ' + a.zeilen + ' Zeilen · Summe ' + a.summe));
+      d.appendChild(el('div', 'info', 'Sendung ' + a.sendung_id + ' · ' + a.geraet + ' · Fassung ' + a.fassung_zeit));
+      det = el('details');
+      det.appendChild(el('summary', '', 'Inhalt zeigen'));
+      det.appendChild(el('pre', '', a.body));
+      d.appendChild(det);
+      lnk = el('a', 'btn', ok ? 'Erneut senden' : 'Erneut senden (erst Empfänger eintragen)');
+      lnk.href = ok ? mailtoHref(st.einst.empfaenger, a.betreff, a.body) : '#';
+      lnk.setAttribute('data-nr', a.nummer);
+      d.appendChild(lnk);
+      box.appendChild(d);
+    }
+    zeige('ovlArchiv');
+  }
+  function archivKlick(e) {
+    var t = e.target;
+    if (t.tagName !== 'A') { return; }
+    if (t.getAttribute('href') === '#') { e.preventDefault(); return; }
+    meld('Sendung Nr. ' + t.getAttribute('data-nr') + ' erneut geöffnet (gleiche ID, gleicher Inhalt).');
+  }
+
+  /* ---- Einstellungen ---- */
+  function einstOeffnen() {
+    $('eEmpf').value = st.einst.empfaenger;
+    $('eGeraet').value = st.einst.geraet;
+    $('eFehler').textContent = '';
+    $('eInfo').textContent = 'Installations-ID ' + st.inst + ' · nächste Sendung Nr. ' + st.nummer + ' · Version ' + VERSION +
+      ' · Prüfwert Kurzcode HTTPS://EXAMPLE.COM/A = ' + kurzcode('HTTPS://EXAMPLE.COM/A') +
+      (speicherOk ? '' : ' · SPEICHER NICHT VERFÜGBAR');
+    testLink();
+    zeige('ovlEinst');
+  }
+  function einstPruefen() {
+    var em = $('eEmpf').value.trim(), g = $('eGeraet').value.trim();
+    if (!MAIL_RE.test(em)) { return { fehler: 'Empfänger ist keine gültige Mail-Adresse.' }; }
+    if (!GERAET_RE.test(g)) { return { fehler: 'Gerätename: 1–24 Zeichen, nur A–Z, a–z, 0–9, Leerzeichen, Punkt, _ und -.' }; }
+    return { empfaenger: em, geraet: g };
+  }
+  function testLink() {
+    var r = einstPruefen(), l = $('lnkTest');
+    if (r.fehler) { l.href = '#'; return; }
+    l.href = mailtoHref(r.empfaenger, '#lager test', 'Testmail der Lager-App ' + VERSION + ' von ' + r.geraet +
+      ', Installation ' + st.inst + ', ' + isoLokal(new Date()) + '. Enthaelt keine Lagerdaten.\r\n');
+  }
+  function einstSpeichern() {
+    var r = einstPruefen();
+    if (r.fehler) { $('eFehler').textContent = r.fehler; return; }
+    st.einst = r;
+    schreib('einstellungen', st.einst);
+    zu('ovlEinst');
+    meld('Einstellungen gespeichert.', 'ok');
+    render();
+    fokus();
+  }
+  function testKlick(e) {
+    var r = einstPruefen();
+    if (r.fehler) { e.preventDefault(); $('eFehler').textContent = r.fehler; return; }
+    testLink();
+    $('eFehler').textContent = 'Testmail geöffnet. Im Hub wird sie nicht gebucht (keine Datenzeilen).';
+  }
+
+  /* ---- Start ---- */
+  function schliessen() { zu(offen() || 'ovlSenden'); bereit = null; render(); fokus(); }
+
+  laden();
+  if (!speicherOk) {
+    warnen('Achtung: Speicher (localStorage) nicht verfügbar – Erfassung geht beim Schließen verloren. Nicht im privaten Modus nutzen, App vom Home-Bildschirm starten.');
+  }
+  render();
+
+  var mbs = document.querySelectorAll('.mb');
+  for (var i = 0; i < mbs.length; i++) {
+    mbs[i].addEventListener('click', function () {
+      st.modus = this.getAttribute('data-m');
+      render();
+      meld('Modus: ' + NAMEN[st.modus]);
+      fokus();
+    });
+  }
+  $('scanForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = $('scan'), v = f.value;
+    f.value = '';
+    verarbeite(v, false);
+    fokus();
+  });
+  $('liste').addEventListener('click', zeilenKlick);
+  $('btnSenden').addEventListener('click', sendenOeffnen);
+  $('lnkMail').addEventListener('click', mailKlick);
+  $('sAbbr').addEventListener('click', schliessen);
+  $('fJa').addEventListener('click', antwortJa);
+  $('fNein').addEventListener('click', antwortNein);
+  $('btnArchiv').addEventListener('click', archivOeffnen);
+  $('archivListe').addEventListener('click', archivKlick);
+  $('aZu').addEventListener('click', schliessen);
+  $('btnEinst').addEventListener('click', einstOeffnen);
+  $('eSpeichern').addEventListener('click', einstSpeichern);
+  $('eEmpf').addEventListener('input', testLink);
+  $('eGeraet').addEventListener('input', testLink);
+  $('lnkTest').addEventListener('click', testKlick);
+  $('eZu').addEventListener('click', schliessen);
+
+  /* Zusatz-Probe P3: Scanner-Eingabe ohne Fokus */
+  document.addEventListener('keydown', function (e) {
+    var a = document.activeElement, tag = a && a.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || offen()) { puffer = ''; return; }
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      if (puffer) { var p = puffer; puffer = ''; verarbeite(p, true); e.preventDefault(); }
+      fokus();
+      return;
+    }
+    if (e.key && e.key.length === 1) { puffer += e.key; if (puffer.length > 500) { puffer = ''; } }
+  });
+
+  window.addEventListener('pageshow', pruefeAusstehend);
+  window.addEventListener('focus', pruefeAusstehend);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { pruefeAusstehend(); } });
+  pruefeAusstehend();
+  fokus();
+
+  if ('serviceWorker' in navigator) {
+    try { navigator.serviceWorker.register('sw.js').catch(function () { /* offline-Cache optional */ }); } catch (e) { /* egal */ }
+  }
+})();
+</script>
+</body>
+</html>
